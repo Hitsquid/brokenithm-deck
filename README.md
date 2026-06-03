@@ -37,7 +37,7 @@ No server files need to change.
 - Custom server port: enter `192.168.1.20:PORT`.
 - TCP server: start the PC server with `-T`, choose `TCP` in the Deck app, and enter the PC IP or `host:port`.
 
-For UDP, the Deck app listens on local UDP port `52468` by default and advertises that port in the `CON` packet, matching the Android configuration style. If your PC server uses a custom `-p` port, only the address field in the Deck app needs the matching `:PORT`.
+For UDP, the Deck app listens on local UDP port `52468` by default. The current upstream Windows UDP server can spam `Cannot send packet: error 10049` after a UDP `CON` packet, so UDP server feedback is off by default. Input, coin, card, test, service, and virtual card packets still use the same server port and shared-memory path. Use TCP mode for LED and latency feedback, or enable `UDP feedback` in Advanced if you are using a patched server.
 
 ## Deck Controls
 

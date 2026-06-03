@@ -19,6 +19,7 @@ const refs = {
   traceCanvas: document.getElementById("trace-canvas"),
   localPort: document.getElementById("local-port"),
   advertiseAddress: document.getElementById("advertise-address"),
+  udpServerFeedback: document.getElementById("udp-server-feedback"),
   sendHz: document.getElementById("send-hz"),
   sendHzValue: document.getElementById("send-hz-value"),
   virtualCardEnabled: document.getElementById("virtual-card-enabled"),
@@ -36,6 +37,7 @@ const state = {
     sendHz: 500,
     localPort: 52468,
     advertiseAddress: "",
+    udpServerFeedback: false,
     virtualCard: {
       enabled: false,
       present: false,
@@ -114,6 +116,7 @@ function applyConfig(config) {
   refs.showDelay.checked = Boolean(state.config.showDelay);
   refs.localPort.value = state.config.localPort || 52468;
   refs.advertiseAddress.value = state.config.advertiseAddress || "";
+  refs.udpServerFeedback.checked = Boolean(state.config.udpServerFeedback);
   refs.sendHz.value = state.config.sendHz || 500;
   refs.sendHzValue.textContent = `${refs.sendHz.value} Hz`;
   refs.virtualCardEnabled.checked = Boolean(state.config.virtualCard.enabled);
@@ -152,6 +155,7 @@ function collectConfig() {
     showDelay: refs.showDelay.checked,
     localPort: Number(refs.localPort.value) || 52468,
     advertiseAddress: refs.advertiseAddress.value.trim(),
+    udpServerFeedback: refs.udpServerFeedback.checked,
     sendHz: Number(refs.sendHz.value) || 500,
     virtualCard: {
       ...state.config.virtualCard,
@@ -368,6 +372,7 @@ function bindEvents() {
     refs.showDelay,
     refs.localPort,
     refs.advertiseAddress,
+    refs.udpServerFeedback,
     refs.sendHz,
     refs.virtualCardEnabled,
     refs.virtualCardPresent,

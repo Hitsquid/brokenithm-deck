@@ -28,6 +28,7 @@ const DEFAULT_CONFIG = {
   sendHz: 500,
   localPort: DEFAULT_PORT,
   advertiseAddress: "",
+  udpServerFeedback: false,
   virtualCard: {
     enabled: false,
     present: false,
@@ -163,22 +164,12 @@ class BrokenithmClient extends EventEmitter {
     });
 
     this.status.localPort = this.udp.address().port;
-    const connectPacket = buildConnectPacket({
-      address: advertisedAddress,
-      port: this.status.localPort
-    });
-    this.sendRaw(connectPacket);
-
-    let sendsLeft = 5;
-    this.connectRepeater = setInterval(() => {
-      sendsLeft -= 1;
-      if (sendsLeft <= 0) {
-        clearInterval(this.connectRepeater);
-        this.connectRepeater = null;
-        return;
-      }
-      this.sendRaw(connectPacket);
-    }, 200);
+    if (this.config.udpServerFeedback) {
+      this.sendRaw(buildConnectPacket({
+        address: advertisedAddress,
+        port: this.status.localPort
+      }));
+    }
   }
 
   async connectTcp(endpoint) {

@@ -25,7 +25,7 @@ chmod +x brokenithm-deck.sh
 ./brokenithm-deck.sh
 ```
 
-The launcher starts the local Deck app at `http://127.0.0.1:39868`. If Node.js is not installed, the first launch downloads a portable Node.js runtime into `.runtime/` inside this folder.
+The launcher starts the local Deck app at `http://127.0.0.1:39868`. If Node.js is not installed, the first launch downloads a portable Node.js runtime into `.runtime/` inside this folder. On Steam Deck it prefers Chrome/Chromium/Firefox kiosk mode and the web app also requests fullscreen on first input.
 
 To add it to Steam, add `brokenithm-deck.sh` as a Non-Steam Game. In Gaming Mode, set the controller layout to allow touch screen and gamepad input.
 
@@ -37,12 +37,15 @@ No server files need to change.
 - Custom server port: enter `192.168.1.20:PORT`.
 - TCP server: start the PC server with `-T`, choose `TCP` in the Deck app, and enter the PC IP or `host:port`.
 
-For UDP, the Deck app listens on local UDP port `52468` by default. The current upstream Windows UDP server can spam `Cannot send packet: error 10049` after a UDP `CON` packet, so UDP server feedback is off by default. Input, coin, card, test, service, and virtual card packets still use the same server port and shared-memory path. Use TCP mode for LED and latency feedback, or enable `UDP feedback` in Advanced if you are using a patched server.
+For UDP, the Deck app listens on local UDP port `52468` by default. Input, coin, card, test, service, and virtual card packets use the same server port and shared-memory path as the Android client.
+
+Real UDP LED/latency feedback requires a small fix to the current upstream Windows server. The upstream server computes the feedback destination before the Deck sends `CON`, which causes `Cannot send packet: error 10049`. Apply `server-patches/brokenithm-android-server-udp-feedback.patch` to `tindy2013/Brokenithm-Android-Server`, rebuild the server, then enable `UDP feedback` in Advanced. TCP feedback works without this server patch by starting the PC server with `-T`.
 
 ## Deck Controls
 
 - Touch the lower slider area for slider input.
 - Touch the upper AIR area for AIR input.
+- Slider lanes are color-banded for menuing; real LED colors fill each lane when feedback is available.
 - View button sends coin.
 - Menu button sends card.
 - L1 holds test.

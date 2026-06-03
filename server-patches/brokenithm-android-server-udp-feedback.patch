@@ -1,0 +1,44 @@
+diff --git a/src/main.cpp b/src/main.cpp
+index 9d6f81f..b3f0b2a 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -99,7 +99,6 @@ void threadLEDBroadcast(SOCKET sHost, const IPCMemoryInfo* memory)
+     static std::string previous_status;
+     static int skip_count = 0;
+     static std::string head = "\x63LED";
+-    auto addr = makeIPv4Addr(remote_address, remote_port);
+     while(!EXIT_FLAG)
+     {
+         if(!CONNECTED) {
+@@ -119,6 +118,7 @@ void threadLEDBroadcast(SOCKET sHost, const IPCMemoryInfo* memory)
+         if(!same)
+         {
+             current_status.insert(0, head);
++            auto addr = makeIPv4Addr(remote_address, remote_port);
+             if(socketSendTo(sHost, addr, current_status) < 0)
+             {
+                 printErr("[Error] Cannot send packet: error %lu\n", GetLastError());
+@@ -143,6 +143,7 @@ void threadLEDBroadcast(SOCKET sHost, const IPCMemoryInfo* memory)
+             if(++skip_count > 50)
+             {
+                 current_status.insert(0, head);
++                auto addr = makeIPv4Addr(remote_address, remote_port);
+                 if(socketSendTo(sHost, addr, current_status) < 0)
+                 {
+                     printErr("[ERROR] Cannot send packet: error %lu\n", GetLastError());
+@@ -298,7 +299,6 @@ void threadInputReceive(SOCKET sHost, IPCMemoryInfo *memory)
+     char recv_buffer[tcp_buffer_size];
+     char buffer[BUFSIZ];
+     std::string remains;
+-    auto addr = makeIPv4Addr(remote_address, remote_port);
+     while(!EXIT_FLAG)
+     {
+         int recv_len, real_len;
+@@ -399,6 +399,7 @@ void threadInputReceive(SOCKET sHost, IPCMemoryInfo *memory)
+             std::string response;
+             response.assign(buffer, 12);
+             response.replace(2, 1, "O");
++            auto addr = makeIPv4Addr(remote_address, remote_port);
+             socketSendTo(sHost, addr, response);
+         }
+         else if(packet_len >= sizeof(PacketCard) && buffer[1] == 'C' && buffer[2] == 'R' && buffer[3] == 'D')

@@ -64,6 +64,57 @@ find_node() {
   echo "${RUNTIME_DIR}/node/bin/node"
 }
 
+launch_chromium_kiosk() {
+  mkdir -p "${RUNTIME_DIR}/browser-profile"
+  "$@" \
+    --user-data-dir="${RUNTIME_DIR}/browser-profile" \
+    --no-first-run \
+    --noerrdialogs \
+    --disable-infobars \
+    --disable-notifications \
+    --disable-session-crashed-bubble \
+    --disable-features=Translate,TranslateUI,MediaRouter \
+    --overscroll-history-navigation=0 \
+    --start-fullscreen \
+    --kiosk \
+    "$url" >/dev/null 2>&1 &
+}
+
+open_browser() {
+  if command -v flatpak >/dev/null 2>&1; then
+    if flatpak info com.google.Chrome >/dev/null 2>&1; then
+      launch_chromium_kiosk flatpak run com.google.Chrome
+      return
+    fi
+
+    if flatpak info org.chromium.Chromium >/dev/null 2>&1; then
+      launch_chromium_kiosk flatpak run org.chromium.Chromium
+      return
+    fi
+
+    if flatpak info org.mozilla.firefox >/dev/null 2>&1; then
+      flatpak run org.mozilla.firefox --kiosk "$url" >/dev/null 2>&1 &
+      return
+    fi
+  fi
+
+  for browser in google-chrome chrome chromium chromium-browser; do
+    if command -v "$browser" >/dev/null 2>&1; then
+      launch_chromium_kiosk "$browser"
+      return
+    fi
+  done
+
+  if command -v firefox >/dev/null 2>&1; then
+    firefox --kiosk "$url" >/dev/null 2>&1 &
+    return
+  fi
+
+  if command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$url" >/dev/null 2>&1 || true
+  fi
+}
+
 NODE_BIN="$(find_node)"
 url="http://${HOST}:${PORT}"
 
@@ -88,8 +139,6 @@ for _ in $(seq 1 80); do
   sleep 0.1
 done
 
-if command -v xdg-open >/dev/null 2>&1; then
-  xdg-open "$url" >/dev/null 2>&1 || true
-fi
+open_browser
 
 wait "$server_pid"

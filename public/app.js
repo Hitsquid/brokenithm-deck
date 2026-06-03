@@ -47,6 +47,7 @@ const state = {
   },
   connected: false,
   ws: null,
+  wakeLock: null,
   pointers: new Map(),
   keys: new Set(),
   airHeight: 6,
@@ -61,6 +62,26 @@ const state = {
   }
 };
 
+const SENSOR_COUNT = 32;
+const LANE_PALETTE = [
+  [244, 75, 95],
+  [245, 120, 52],
+  [246, 180, 57],
+  [224, 220, 72],
+  [156, 224, 90],
+  [74, 210, 125],
+  [52, 206, 188],
+  [63, 180, 238],
+  [89, 143, 245],
+  [132, 112, 244],
+  [179, 100, 232],
+  [222, 93, 190],
+  [241, 97, 139],
+  [244, 132, 88],
+  [218, 179, 66],
+  [170, 212, 86]
+];
+
 function createSurface() {
   for (let i = 0; i < 6; i += 1) {
     const band = document.createElement("div");
@@ -73,6 +94,8 @@ function createSurface() {
     const key = document.createElement("div");
     key.className = "key";
     key.dataset.key = String(i);
+    const laneColor = LANE_PALETTE[Math.floor(i / 2) % LANE_PALETTE.length];
+    key.style.setProperty("--lane-rgb", laneColor.join(", "));
     refs.sliderVisual.appendChild(key);
   }
 }
@@ -98,6 +121,29 @@ function connectWebSocket() {
 function send(message) {
   if (!state.ws || state.ws.readyState !== WebSocket.OPEN) return;
   state.ws.send(JSON.stringify(message));
+}
+
+async function requestAppFullscreen() {
+  try {
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+      await document.documentElement.requestFullscreen({ navigationUI: "hide" });
+    }
+  } catch {
+  }
+
+  try {
+    if (navigator.wakeLock && !state.wakeLock) {
+      state.wakeLock = await navigator.wakeLock.request("screen");
+      state.wakeLock.addEventListener("release", () => {
+        state.wakeLock = null;
+      });
+    }
+  } catch {
+  }
+}
+
+function blockInterruptingGesture(event) {
+  event.preventDefault();
 }
 
 function applyConfig(config) {
@@ -178,6 +224,7 @@ function renderLed(colors) {
     const lit = color.r + color.g + color.b > 16;
     keys[i].classList.toggle("led-lit", lit);
     keys[i].style.setProperty("--led-color", `rgb(${color.r}, ${color.g}, ${color.b})`);
+    keys[i].style.setProperty("--led-rgb", `${color.r}, ${color.g}, ${color.b}`);
   }
 }
 
@@ -214,22 +261,29 @@ function renderActiveInput() {
   drawTrace();
 }
 
-function mapSlider(x, width, target) {
-  const clampedX = Math.max(0, Math.min(width - 1, x));
-  const blockWidth = width / 16;
-  const pointPos = clampedX / blockWidth;
-  const index = Math.max(0, Math.min(15, Math.floor(pointPos)));
-  const fraction = pointPos - index;
-
-  addKey(target, index * 2);
-  if (fraction < 0.25 && index > 0) addKey(target, (index - 1) * 2 + 1);
-  if (fraction > 0.75 && index < 15) addKey(target, (index + 1) * 2);
+function addSliderSensor(target, key) {
+  target.add(Math.max(0, Math.min(SENSOR_COUNT - 1, key)));
 }
 
-function addKey(target, key) {
-  let current = Math.max(0, Math.min(31, key));
-  if (target.has(current) && current < 31) current += 1;
-  target.add(current);
+function mapSlider(point, width, target) {
+  const sensorWidth = width / SENSOR_COUNT;
+  const clampedX = Math.max(0, Math.min(width - 1, point.x));
+  const position = Math.max(0, Math.min(SENSOR_COUNT - 0.001, clampedX / sensorWidth));
+  const center = Math.floor(position);
+  const contactWidth = Math.max(0, Number(point.width) || 0);
+  const contactSpan = Math.max(0, Math.min(2.5, contactWidth / sensorWidth));
+
+  if (contactSpan > 0.7) {
+    const left = Math.floor(position - contactSpan / 2);
+    const right = Math.floor(position + contactSpan / 2);
+    for (let key = left; key <= right; key += 1) addSliderSensor(target, key);
+    return;
+  }
+
+  addSliderSensor(target, center);
+  const fraction = position - center;
+  if (fraction < 0.1 && center > 0) addSliderSensor(target, center - 1);
+  if (fraction > 0.9 && center < SENSOR_COUNT - 1) addSliderSensor(target, center + 1);
 }
 
 function recomputeTouchState() {
@@ -244,7 +298,7 @@ function recomputeTouchState() {
     if (state.config.enableAir && y >= 0 && y < airHeightPx) {
       airHeight = state.config.simpleAir ? 0 : Math.min(5, Math.floor((y / airHeightPx) * 6));
     } else if (y >= airHeightPx && y <= rect.height) {
-      mapSlider(x, rect.width, keys);
+      mapSlider({ ...point, x }, rect.width, keys);
     }
   }
 
@@ -256,7 +310,8 @@ function recomputeTouchState() {
 function pointerUpdate(event) {
   state.pointers.set(event.pointerId, {
     clientX: event.clientX,
-    clientY: event.clientY
+    clientY: event.clientY,
+    width: event.pointerType === "touch" ? event.width : 0
   });
   recomputeTouchState();
 }
@@ -279,7 +334,8 @@ function syncTouchPointers(event) {
   for (const touch of Array.from(event.touches)) {
     state.pointers.set(`touch-${touch.identifier}`, {
       clientX: touch.clientX,
-      clientY: touch.clientY
+      clientY: touch.clientY,
+      width: Math.max(0, Number(touch.radiusX) || 0) * 2
     });
   }
 
@@ -356,6 +412,7 @@ function handleGamepad() {
 function bindEvents() {
   refs.form.addEventListener("submit", (event) => {
     event.preventDefault();
+    requestAppFullscreen();
     state.config = collectConfig();
     if (state.connected) {
       send({ type: "disconnect" });
@@ -415,6 +472,7 @@ function bindEvents() {
   });
 
   refs.playSurface.addEventListener("pointerdown", (event) => {
+    requestAppFullscreen();
     refs.playSurface.setPointerCapture(event.pointerId);
     pointerUpdate(event);
   });
@@ -425,12 +483,16 @@ function bindEvents() {
   window.addEventListener("pointerup", pointerRemove);
   window.addEventListener("pointercancel", pointerRemove);
   window.addEventListener("blur", clearTouchPointers);
-  refs.playSurface.addEventListener("touchstart", syncTouchPointers, { passive: false });
+  refs.playSurface.addEventListener("touchstart", (event) => {
+    requestAppFullscreen();
+    syncTouchPointers(event);
+  }, { passive: false });
   refs.playSurface.addEventListener("touchmove", syncTouchPointers, { passive: false });
   refs.playSurface.addEventListener("touchend", touchRelease, { passive: false });
   refs.playSurface.addEventListener("touchcancel", touchRelease, { passive: false });
 
   window.addEventListener("keydown", (event) => {
+    requestAppFullscreen();
     if (event.repeat) return;
     if (event.code === "Digit1") send({ type: "function", name: "coin" });
     if (event.code === "Digit2") send({ type: "function", name: "card" });
@@ -447,6 +509,13 @@ function bindEvents() {
     const key = keyboardToKey(event.code);
     if (key !== undefined) state.keyboardKeys.delete(key);
     recomputeTouchState();
+  });
+
+  window.addEventListener("contextmenu", blockInterruptingGesture);
+  window.addEventListener("dragstart", blockInterruptingGesture);
+  window.addEventListener("selectstart", blockInterruptingGesture);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") requestAppFullscreen();
   });
 }
 

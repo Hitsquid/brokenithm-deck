@@ -266,6 +266,35 @@ function pointerRemove(event) {
   recomputeTouchState();
 }
 
+function clearTouchPointers() {
+  if (state.pointers.size === 0) return;
+  state.pointers.clear();
+  recomputeTouchState();
+}
+
+function syncTouchPointers(event) {
+  if (event.cancelable) event.preventDefault();
+
+  state.pointers.clear();
+  for (const touch of Array.from(event.touches)) {
+    state.pointers.set(`touch-${touch.identifier}`, {
+      clientX: touch.clientX,
+      clientY: touch.clientY
+    });
+  }
+
+  recomputeTouchState();
+}
+
+function touchRelease(event) {
+  if (event.cancelable) event.preventDefault();
+  if (event.touches.length === 0) {
+    clearTouchPointers();
+    return;
+  }
+  syncTouchPointers(event);
+}
+
 function drawTrace() {
   const canvas = refs.traceCanvas;
   const rect = refs.playSurface.getBoundingClientRect();
@@ -392,6 +421,14 @@ function bindEvents() {
   refs.playSurface.addEventListener("pointermove", pointerUpdate);
   refs.playSurface.addEventListener("pointerup", pointerRemove);
   refs.playSurface.addEventListener("pointercancel", pointerRemove);
+  refs.playSurface.addEventListener("lostpointercapture", pointerRemove);
+  window.addEventListener("pointerup", pointerRemove);
+  window.addEventListener("pointercancel", pointerRemove);
+  window.addEventListener("blur", clearTouchPointers);
+  refs.playSurface.addEventListener("touchstart", syncTouchPointers, { passive: false });
+  refs.playSurface.addEventListener("touchmove", syncTouchPointers, { passive: false });
+  refs.playSurface.addEventListener("touchend", touchRelease, { passive: false });
+  refs.playSurface.addEventListener("touchcancel", touchRelease, { passive: false });
 
   window.addEventListener("keydown", (event) => {
     if (event.repeat) return;

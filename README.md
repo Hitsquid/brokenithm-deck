@@ -16,16 +16,16 @@ This app keeps the PC side the same: run `tindy2013/Brokenithm-Android-Server` e
 
 ## Run On Steam Deck
 
-1. Put this folder on the Deck.
-2. Make sure Node.js 18 or newer is available.
-3. In Desktop Mode, run:
+In Desktop Mode, run:
 
 ```bash
+git clone https://github.com/Hitsquid/brokenithm-deck.git
+cd brokenithm-deck
 chmod +x brokenithm-deck.sh
 ./brokenithm-deck.sh
 ```
 
-The launcher starts the local Deck app at `http://127.0.0.1:39868`.
+The launcher starts the local Deck app at `http://127.0.0.1:39868`. If Node.js is not installed, the first launch downloads a portable Node.js runtime into `.runtime/` inside this folder.
 
 To add it to Steam, add `brokenithm-deck.sh` as a Non-Steam Game. In Gaming Mode, set the controller layout to allow touch screen and gamepad input.
 

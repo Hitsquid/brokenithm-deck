@@ -1,4 +1,5 @@
 config.json
+.runtime/
 node_modules/
 npm-debug.log*
 .DS_Store

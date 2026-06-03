@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Brokenithm Deck</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="mark">BD</div>
+          <div>
+            <h1>Brokenithm Deck</h1>
+            <p id="connection-line">Offline</p>
+          </div>
+        </div>
+
+        <form class="connection" id="connection-form">
+          <input id="address" name="address" autocomplete="off" inputmode="url" placeholder="PC address or host:port">
+          <div class="segmented" role="group" aria-label="Network mode">
+            <button type="button" data-mode="udp" class="active">UDP</button>
+            <button type="button" data-mode="tcp">TCP</button>
+          </div>
+          <button type="submit" id="connect-button" class="primary">Start</button>
+        </form>
+      </header>
+
+      <section class="control-strip" aria-label="Controls">
+        <button type="button" id="coin-button">Coin</button>
+        <button type="button" id="card-button">Card</button>
+        <button type="button" class="hold-button" data-hold="testButton">Test</button>
+        <button type="button" class="hold-button" data-hold="serviceButton">Service</button>
+        <label><input type="checkbox" id="enable-air" checked> Air</label>
+        <label><input type="checkbox" id="simple-air"> Simple</label>
+        <label><input type="checkbox" id="show-delay"> Delay</label>
+        <output id="latency">-- ms</output>
+      </section>
+
+      <section class="play-surface" id="play-surface" aria-label="Brokenithm input surface">
+        <div class="air-stack" id="air-stack"></div>
+        <div class="slider-visual" id="slider-visual"></div>
+        <canvas id="trace-canvas" aria-hidden="true"></canvas>
+      </section>
+
+      <section class="advanced">
+        <details>
+          <summary>Advanced</summary>
+          <div class="advanced-grid">
+            <label>
+              Local UDP port
+              <input id="local-port" inputmode="numeric" value="52468">
+            </label>
+            <label>
+              Advertise IP
+              <input id="advertise-address" autocomplete="off" placeholder="Auto">
+            </label>
+            <label>
+              Send rate
+              <input id="send-hz" type="range" min="60" max="1000" value="500" step="10">
+              <span id="send-hz-value">500 Hz</span>
+            </label>
+            <label>
+              Card ID
+              <input id="card-id" autocomplete="off" maxlength="20" placeholder="20 hex chars">
+            </label>
+            <label><input type="checkbox" id="virtual-card-enabled"> Virtual card</label>
+            <label><input type="checkbox" id="virtual-card-present"> Present</label>
+          </div>
+        </details>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

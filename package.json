@@ -1,0 +1,14 @@
+{
+  "name": "brokenithm-deck",
+  "version": "0.1.0",
+  "description": "Steam Deck controller port for Brokenithm-Android server protocol.",
+  "license": "GPL-3.0-or-later",
+  "private": true,
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
